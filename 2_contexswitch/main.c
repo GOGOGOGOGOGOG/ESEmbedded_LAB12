@@ -14,33 +14,49 @@ void setup_systick(uint32_t ticks);
 
 void init_task(unsigned int task_id, uint32_t *task_addr, uint32_t *psp_init)
 {
-	??????	  //xPSR (bit 24, T bit, has to be 1 in Thumb state)
-	?????? //Return Address is being initialized to the task entry
-	psp_array[task_id] = ??????	//initialize psp_array (stack frame: 8 + r4 ~ r11: 8)
+	*(psp_init-1) = (uint32_t)0x1000000 ;	  //xPSR (bit 24第25個bits, T bit, has to be 1 in Thumb state) 所以是用thumb bits instruction
+	*(psp_init-2) = (uint32_t)task_addr; //Return Address is being initialized to the task entry
+	psp_array[task_id] = psp_init-16;	//initialize psp_array (stack frame: 8 + r4 ~ r11: 8)
 }
 
 void task0(void)
 {
-	printf("[Task0] Start in unprivileged thread mode.\r\n\n");
+	while (1)
+	{
+		printf("[Task0] Start in unprivileged thread mode.\r\n\n");
 	printf("[Task0] Control: 0x%x \r\n", (unsigned int)read_ctrl());
 
-	blink(LED_BLUE); //should not return
+	blink_count(LED_BLUE,15); //should not return
+	 for(int i=0;i<=10;i++)
+    ;
+	}
+	
+	
 }
 
 void task1(void)
 {
+	while(1){
 	printf("[Task1] Start in unprivileged thread mode.\r\n\n");
 	printf("[Task1] Control: 0x%x \r\n", (unsigned int)read_ctrl());
 
-	blink(LED_GREEN); //should not return
+	blink_count(LED_GREEN,15); //should not return
+	 for(int i=0;i<=10;i++)
+    ;
+	}
 }
 
 void task2(void)
 {
+	while(1){
 	printf("[Task2] Start in unprivileged thread mode.\r\n\n");
 	printf("[Task2] Control: 0x%x \r\n", (unsigned int)read_ctrl());
 
-	blink(LED_ORANGE); //should not return
+	blink_count(LED_ORANGE,15); //should not return
+    for(int i=0;i<=10;i++)
+    ;
+
+	}
 }
 
 int main(void)
@@ -50,9 +66,9 @@ int main(void)
 	uint32_t user_stacks[TASK_NUM][PSTACK_SIZE_WORDS];
 
 	//init user tasks
-	init_task(0, ??????, ??????);
-	init_task(1, ??????, ??????);
-	init_task(2, ??????, ??????);
+	init_task(0, (uint32_t*)task0, user_stacks[0]+1024);
+	init_task(1, (uint32_t*)task1, user_stacks[1]+1024);
+	init_task(2, (uint32_t*)task2, user_stacks[2]+1024);
 
 	printf("[Kernel] Start in privileged thread mode.\r\n\n");
 
@@ -91,5 +107,5 @@ uint32_t *sw_task(uint32_t *psp)
 	if (++curr_task_id > TASK_NUM - 1) //get next task id
 		curr_task_id = 0;
 
-	?????? //return next psp
+	return psp_array[curr_task_id]; //return next psp
 }
